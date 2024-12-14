@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import { fetchProducts, fetchProductsByCategory } from '../redux/slices/product';
+import { fetchProducts, fetchProductsByCategory, createProduct, deleteProduct } from '../redux/slices/product';
 import { fetchCategories } from '../redux/slices/categories';
-import { createProduct, deleteProduct } from '../redux/slices/product';
 import axios from '../redux/axios';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
-import { Button, Card, CardActionArea, CardMedia, CardContent, Typography, Grid, Select, MenuItem, FormControl, InputLabel, Dialog, DialogTitle, DialogContent, DialogActions, TextField } from '@mui/material';
+import DeleteIcon from '@mui/icons-material/Delete';
+import { Button, Card, CardActionArea, CardMedia, CardContent, Typography, Grid, Select, MenuItem, FormControl, InputLabel, Dialog, DialogTitle, DialogContent, DialogActions, TextField, IconButton, Tooltip } from '@mui/material';
 
 const ProductsPage = () => {
     const dispatch = useDispatch();
@@ -25,6 +25,10 @@ const ProductsPage = () => {
         imageUrl: '',
         categories: []
     });
+
+    // Состояния для подтверждения удаления
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [productToDelete, setProductToDelete] = useState(null);
 
     const handleClickOpen = () => {
         setOpen(true);
@@ -94,6 +98,25 @@ const ProductsPage = () => {
         setSelectedProducts([]);
     };
 
+    // Функции для удаления отдельного продукта
+    const handleDeleteClick = (product) => {
+        setProductToDelete(product);
+        setDeleteDialogOpen(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (productToDelete) {
+            await dispatch(deleteProduct(productToDelete._id));
+            setDeleteDialogOpen(false);
+            setProductToDelete(null);
+        }
+    };
+
+    const handleCancelDelete = () => {
+        setDeleteDialogOpen(false);
+        setProductToDelete(null);
+    };
+
     useEffect(() => {
         dispatch(fetchCategories());
         dispatch(fetchProducts());
@@ -131,17 +154,17 @@ const ProductsPage = () => {
         <div style={{ margin: '20px' }}>
             {user && user.role === 'admin' && (
                 <>
-                    <Button variant="contained" color="primary" onClick={handleClickOpen}>
+                    <Button variant="contained" color="primary" onClick={handleClickOpen} style={{ marginRight: '10px' }}>
                         Добавить
                     </Button>
                     {selectedProducts.length > 0 && (
                         <Button variant="contained" color="secondary" onClick={handleDeleteSelected}>
-                            Удалить
+                            Удалить выбранные
                         </Button>
                     )}
                 </>
             )}
-            <FormControl fullWidth style={{ marginBottom: '20px' }}>
+            <FormControl fullWidth style={{ marginTop: '20px', marginBottom: '20px' }}>
                 <InputLabel id="category-select-label">Категория</InputLabel>
                 <Select
                     labelId="category-select-label"
@@ -159,22 +182,30 @@ const ProductsPage = () => {
                     ))}
                 </Select>
             </FormControl>
-            <TextField
-                label="Мин. цена"
-                type="number"
-                value={priceFilter.min}
-                onChange={e => setPriceFilter({ ...priceFilter, min: e.target.value })}
-            />
-            <TextField
-                label="Макс. цена"
-                type="number"
-                value={priceFilter.max}
-                onChange={e => setPriceFilter({ ...priceFilter, max: e.target.value })}
-            />
+            <div style={{ display: 'flex', gap: '20px', marginBottom: '20px' }}>
+                <TextField
+                    label="Мин. цена"
+                    type="number"
+                    value={priceFilter.min}
+                    onChange={e => setPriceFilter({ ...priceFilter, min: e.target.value })}
+                />
+                <TextField
+                    label="Макс. цена"
+                    type="number"
+                    value={priceFilter.max}
+                    onChange={e => setPriceFilter({ ...priceFilter, max: e.target.value })}
+                />
+            </div>
             <Grid container spacing={2}>
                 {Array.isArray(filteredProducts) && filteredProducts.map(product => (
-                    <Grid item xs={12} sm={6} md={4} lg={3} key={product._id} onClick={() => toggleSelectProduct(product._id)}>
-                        <Card style={{ backgroundColor: selectedProducts.includes(product._id) ? 'lightgray' : 'white' }}>
+                    <Grid item xs={12} sm={6} md={4} lg={3} key={product._id}>
+                        <Card
+                            style={{
+                                backgroundColor: selectedProducts.includes(product._id) ? 'lightgray' : 'white',
+                                position: 'relative'
+                            }}
+                            onClick={() => toggleSelectProduct(product._id)}
+                        >
                             <CardActionArea>
                                 {product.imageUrl && (
                                     <CardMedia
@@ -200,15 +231,31 @@ const ProductsPage = () => {
                                         variant="outlined"
                                         color="primary"
                                         endIcon={<ArrowForwardIcon />}
+                                        style={{ marginTop: '10px' }}
                                     >
                                         Подробнее
                                     </Button>
                                 </CardContent>
                             </CardActionArea>
+                            {user && user.role === 'admin' && (
+                                <Tooltip title="Удалить товар">
+                                    <IconButton
+                                        aria-label="delete"
+                                        onClick={(e) => {
+                                            e.stopPropagation(); // Предотвращаем вызов toggleSelectProduct
+                                            handleDeleteClick(product);
+                                        }}
+                                        style={{ position: 'absolute', top: '10px', right: '10px', backgroundColor: 'rgba(255,255,255,0.7)' }}
+                                    >
+                                        <DeleteIcon color="error" />
+                                    </IconButton>
+                                </Tooltip>
+                            )}
                         </Card>
                     </Grid>
                 ))}
             </Grid>
+            {/* Диалог добавления продукта */}
             <Dialog open={open} onClose={handleClose}>
                 <DialogTitle>Добавить новый товар</DialogTitle>
                 <DialogContent>
@@ -262,7 +309,7 @@ const ProductsPage = () => {
                             multiple
                             value={selectedCategories}
                             onChange={handleChange}
-                            renderValue={(selected) => selected.map(id => categories.find(c => c._id === id).Name).join(', ')}
+                            renderValue={(selected) => selected.map(id => categories.find(c => c._id === id)?.Name).join(', ')}
                         >
                             {categories.map(category => (
                                 <MenuItem key={category._id} value={category._id}>
@@ -275,6 +322,23 @@ const ProductsPage = () => {
                 <DialogActions>
                     <Button onClick={handleClose}>Отмена</Button>
                     <Button onClick={handleSubmit}>Добавить</Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Диалог подтверждения удаления */}
+            <Dialog
+                open={deleteDialogOpen}
+                onClose={handleCancelDelete}
+            >
+                <DialogTitle>Подтвердите удаление</DialogTitle>
+                <DialogContent>
+                    <Typography>
+                        Вы уверены, что хотите удалить товар "{productToDelete?.name}"?
+                    </Typography>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCancelDelete}>Отмена</Button>
+                    <Button onClick={handleConfirmDelete} color="error">Удалить</Button>
                 </DialogActions>
             </Dialog>
         </div>

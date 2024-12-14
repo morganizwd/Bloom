@@ -37,7 +37,7 @@ import {
 } from './utils/index.js';
 
 mongoose
-    .connect('mongodb+srv://admin:He12345678@cluster0.k6wg7rw.mongodb.net/Bloom?retryWrites=true&w=majority')
+    .connect('mongodb+srv://admin:He12345678@cluster0.vgtv5yo.mongodb.net/Bloom?retryWrites=true&w=majority&appName=Cluster0')
     .then(() => console.log('DB OK'))
     .catch((err) => console.log('DB ERROR', err));
 
