@@ -10,7 +10,7 @@ import Container from '@mui/material/Container';
 import Button from '@mui/material/Button';
 import Tooltip from '@mui/material/Tooltip';
 import MenuItem from '@mui/material/MenuItem';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom'; // Импортируем useNavigate
 import { useDispatch, useSelector } from 'react-redux';
 import { logout, selectIsAuth } from '../redux/slices/auth';
 import logo from '../../src/media/logo.png';
@@ -32,6 +32,7 @@ function Header() {
     const [anchorElUser, setAnchorElUser] = React.useState(null);
 
     const dispatch = useDispatch();
+    const navigate = useNavigate(); // Создаём экземпляр navigate
     const isAuth = useSelector(selectIsAuth);
     const userData = useSelector((state) => state.auth.data);
 
@@ -56,6 +57,7 @@ function Header() {
         if (window.confirm('Вы действительно хотите выйти из учетной записи?')) {
             dispatch(logout());
             window.localStorage.removeItem('token');
+            navigate('/login'); // Перенаправляем пользователя на страницу логина
         }
     };
 
@@ -155,10 +157,8 @@ function Header() {
                                 open={Boolean(anchorElUser)}
                                 onClose={handleCloseUserMenu}
                             >
-                                <MenuItem>
-                                    <Typography onClick={onClickLogout}>
-                                        Выйти
-                                    </Typography>
+                                <MenuItem onClick={() => { handleCloseUserMenu(); onClickLogout(); }}>
+                                    <Typography>Выйти</Typography>
                                 </MenuItem>
                             </Menu>
                         ) : (
@@ -180,16 +180,12 @@ function Header() {
                             >
                                 <MenuItem onClick={handleCloseUserMenu}>
                                     <Link to={'/login'} style={{ textAlign: 'center', textDecoration: 'none', color: 'inherit', width: '100%' }}>
-                                        <Typography>
-                                            Войти
-                                        </Typography>
+                                        <Typography>Войти</Typography>
                                     </Link>
                                 </MenuItem>
                                 <MenuItem onClick={handleCloseUserMenu}>
                                     <Link to={'/registration'} style={{ textAlign: 'center', textDecoration: 'none', color: 'inherit', width: '100%' }}>
-                                        <Typography>
-                                            Создать аккаунт
-                                        </Typography>
+                                        <Typography>Создать аккаунт</Typography>
                                     </Link>
                                 </MenuItem>
                             </Menu>

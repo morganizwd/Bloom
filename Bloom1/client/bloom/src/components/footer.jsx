@@ -23,9 +23,6 @@ function Footer() {
               Телефон: +375 (29) 123-45-67
             </Typography>
             <Typography variant="body1">
-              Email: kivanka@bloom.com
-            </Typography>
-            <Typography variant="body1">
               Рабочее время: Пн-Пт 9:00 - 23:00
             </Typography>
           </Grid>
@@ -33,9 +30,6 @@ function Footer() {
             <Typography variant="body1">
               Адрес: ул. Цветочная, 7, Могилев, Беларусь
             </Typography>
-            <Link href="https://github.com/kivanka/Bloom" target="_blank" rel="noopener">
-              GitHub
-            </Link>
           </Grid>
         </Grid>
       </Container>
